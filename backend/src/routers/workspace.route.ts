@@ -1,0 +1,18 @@
+import express from "express";
+import {
+  createWorkspace,
+  deleteWorkspace,
+  getAllWorkspace,
+  getWorkspaceBySlug,
+  updateWorkspace,
+} from "../controllers/workspace.controller";
+import isAuth from "../middleware/isAuth";
+
+const wokspaceRouter = express.Router();
+
+wokspaceRouter.post("/create", isAuth, createWorkspace);
+wokspaceRouter.get("/all", isAuth, getAllWorkspace);
+wokspaceRouter.get("/:slug", isAuth, getWorkspaceBySlug);
+wokspaceRouter.patch("/:slug", isAuth, updateWorkspace);
+wokspaceRouter.post("/:slug", isAuth, deleteWorkspace);
+export default wokspaceRouter;
