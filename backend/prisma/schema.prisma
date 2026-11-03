@@ -11,3 +11,124 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum PostStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+  FACEBOOK
+  LINKEDIN
+}
+
+model User {
+  id          String       @id @default(uuid())
+  name        String
+  email       String       @unique
+  password    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  memberships Membership[]
+  posts       Post[]
+}
+
+model Workspace {
+  id             String          @id @default(uuid())
+  name           String
+  slug           String          @unique
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  memberships    Membership[]
+  posts          Post[]
+  socialAccounts SocialAccount[]
+}
+
+model Membership {
+  id          String        @id @default(uuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(MEMBER)
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Post {
+  id              String           @id @default(uuid())
+  content         String           @db.Text
+  status          PostStatus       @default(DRAFT)
+  scheduledAt     DateTime?
+  publishedAt     DateTime?
+  scheduleVersion Int              @default(0)
+  workspaceId     String
+  creatorId       String
+  socialAccountId String
+  creator         User             @relation(fields: [creatorId], references: [id])
+  workspace       Workspace        @relation(fields: [workspaceId], references: [id])
+  socialAccount   SocialAccount    @relation(fields: [socialAccountId], references: [id])
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  medias          Media[]
+  publishAttempts PublishAttempt[]
+
+  @@index([workspaceId, status])
+  @@index([scheduledAt])
+}
+
+model Media {
+  id        String   @id @default(uuid())
+  fileName  String
+  fileUrl   String
+  mimeType  String
+  size      Int
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+}
+
+model SocialAccount {
+  id          String         @id @default(uuid())
+  platform    SocialPlatform @default(INSTAGRAM)
+  isActive    Boolean        @default(true)
+  accountName String
+  accountId   String
+  workspaceId String
+  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  posts       Post[]
+
+  @@unique([accountId, workspaceId, platform])
+}
+
+model PublishAttempt {
+  id          String   @id @default(uuid())
+  postId      String
+  attemptNo   Int
+  success     Boolean  @default(false)
+  error       String?  @db.Text
+  post        Post     @relation(fields: [postId], references: [id])
+  attemptedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([postId, attemptNo])
+  @@index([postId, attemptedAt])
+}
