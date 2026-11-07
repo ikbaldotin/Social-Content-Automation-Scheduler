@@ -95,6 +95,7 @@ model Media {
   id        String   @id @default(uuid())
   fileName  String
   fileUrl   String
+  publicId  String   @unique
   mimeType  String
   size      Int
   postId    String
