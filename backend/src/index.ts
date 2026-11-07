@@ -5,6 +5,7 @@ import authRouter from "./routers/auth.route";
 import wokspaceRouter from "./routers/workspace.route";
 import membershipRouter from "./routers/membership.route";
 import socialAccountRouter from "./routers/social-account.route";
+import postRouter from "./routers/post.route";
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -14,6 +15,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/workspace", wokspaceRouter);
 app.use("/api/membership", membershipRouter);
 app.use("/api/social", socialAccountRouter);
+app.use("/api/post", postRouter);
 app.listen(port, () => {
   console.log(`Sever is running on port ${port}`);
 });

@@ -77,9 +77,9 @@ model Post {
   publishedAt     DateTime?
   scheduleVersion Int              @default(0)
   workspaceId     String
-  creatorId       String
+  userId          String
   socialAccountId String
-  creator         User             @relation(fields: [creatorId], references: [id])
+  user            User             @relation(fields: [userId], references: [id])
   workspace       Workspace        @relation(fields: [workspaceId], references: [id])
   socialAccount   SocialAccount    @relation(fields: [socialAccountId], references: [id])
   createdAt       DateTime         @default(now())
