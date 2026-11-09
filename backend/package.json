@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": " tsx watch src/index.ts",
+    "dev:worker": "tsx watch src/workers/publish.worker.ts",
     "build": "tsc src/index.ts --outDir dist",
     "db:migrate": "npx prisma migrate dev --name init",
     "db:generate": "npx prisma generate"
