@@ -70,22 +70,24 @@ model Membership {
 }
 
 model Post {
-  id              String           @id @default(uuid())
-  content         String           @db.Text
-  status          PostStatus       @default(DRAFT)
-  scheduledAt     DateTime?
-  publishedAt     DateTime?
-  scheduleVersion Int              @default(0)
-  workspaceId     String
-  userId          String
-  socialAccountId String
-  user            User             @relation(fields: [userId], references: [id])
-  workspace       Workspace        @relation(fields: [workspaceId], references: [id])
-  socialAccount   SocialAccount    @relation(fields: [socialAccountId], references: [id])
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  medias          Media[]
-  publishAttempts PublishAttempt[]
+  id                      String           @id @default(uuid())
+  content                 String           @db.Text
+  status                  PostStatus       @default(DRAFT)
+  scheduledAt             DateTime?
+  publishedAt             DateTime?
+  scheduleVersion         Int              @default(0)
+  publishingLockToken     String?
+  publishingLockExpiresAt DateTime?
+  workspaceId             String
+  userId                  String
+  socialAccountId         String
+  user                    User             @relation(fields: [userId], references: [id])
+  workspace               Workspace        @relation(fields: [workspaceId], references: [id])
+  socialAccount           SocialAccount    @relation(fields: [socialAccountId], references: [id])
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+  medias                  Media[]
+  publishAttempts         PublishAttempt[]
 
   @@index([workspaceId, status])
   @@index([scheduledAt])
