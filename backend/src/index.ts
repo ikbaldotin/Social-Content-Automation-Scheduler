@@ -13,6 +13,7 @@ import publishQueue from "./queues/publish.queue";
 import redis from "./config/redis";
 import { prisma } from "./utils/prisma";
 import publishWorker from "./workers/publish.worker";
+import instagramRouter from "./routers/instagram.route";
 dotenv.config();
 const app = express();
 const server = createServer(app);
@@ -26,6 +27,7 @@ app.use("/api/social", socialAccountRouter);
 app.use("/api/post", postRouter);
 app.use("/api/media", mediaRouter);
 app.use("/api/schedule", scheduleRouter);
+app.use("/api/instagram", instagramRouter);
 server.listen(port, () => {
   console.log(`Sever is running on port ${port}`);
 });

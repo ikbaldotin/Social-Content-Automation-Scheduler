@@ -1,8 +1,10 @@
 import { Job, Worker, DelayedError } from "bullmq";
 import { randomUUID } from "node:crypto";
 import { prisma } from "../utils/prisma";
-import publishPost from "../providers/mock.provider";
+
+import publishPost from "../providers/publish.provider";
 import redis from "../config/redis";
+import { decryptToken } from "../utils/token-encryption";
 interface PublishJobData {
   postId: string;
   scheduleVersion: number;
@@ -20,6 +22,7 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
     },
     include: {
       socialAccount: true,
+      medias: true,
     },
   });
   if (!post) {
@@ -119,13 +122,26 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
     console.log(
       `Publishing post ${post.id} | Job attempt ${jobAttempt}/${totalAttempts} | History attempt ${currentAttempt}`,
     );
+    if (!post.socialAccount.accessToken) {
+      throw new Error("Instagram access token is missing");
+    }
+
+    const media = post.medias[0];
+
+    if (!media?.fileUrl) {
+      throw new Error("Post image is missing");
+    }
+    const accessToken = decryptToken(post.socialAccount.accessToken);
     const result = await publishPost({
       postId: post.id,
       content: post.content,
       platform: post.socialAccount.platform,
       accountName: post.socialAccount.accountName,
+      accountId: post.socialAccount.accountId,
+      accessToken: accessToken,
+      imageUrl: media.fileUrl,
     });
-    if (!result.success) {
+    if (!result.success || !result.externalPostId) {
       throw new Error(result.message || "Provider failed to publish post");
     }
     await prisma.$transaction(async (tx) => {

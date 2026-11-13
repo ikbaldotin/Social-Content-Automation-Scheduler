@@ -75,6 +75,7 @@ model Post {
   status                  PostStatus       @default(DRAFT)
   scheduledAt             DateTime?
   publishedAt             DateTime?
+  externalPostId          String?
   scheduleVersion         Int              @default(0)
   publishingLockToken     String?
   publishingLockExpiresAt DateTime?
@@ -108,16 +109,18 @@ model Media {
 }
 
 model SocialAccount {
-  id          String         @id @default(uuid())
-  platform    SocialPlatform @default(INSTAGRAM)
-  isActive    Boolean        @default(true)
-  accountName String
-  accountId   String
-  workspaceId String
-  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  posts       Post[]
+  id             String         @id @default(uuid())
+  platform       SocialPlatform @default(INSTAGRAM)
+  isActive       Boolean        @default(true)
+  accountName    String
+  accountId      String
+  accessToken    String?        @db.Text
+  tokenExpiresAt DateTime?
+  workspaceId    String
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  posts          Post[]
 
   @@unique([accountId, workspaceId, platform])
 }

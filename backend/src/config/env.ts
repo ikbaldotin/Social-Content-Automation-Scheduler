@@ -6,6 +6,9 @@ const envSchema = z.object({
   CLOUDINARY_API_KEY: z.string(),
   CLOUDINARY_API_SECRET: z.string(),
   REDIS_URL: z.string(),
+  INSTAGRAM_ACCESS_TOKEN: z.string(),
+  TOKEN_ENCRYPTION_KEY: z.string(),
+  INSTAGRAM_ACCOUNT_ID: z.string(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
