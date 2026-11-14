@@ -10,23 +10,29 @@ import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import { Toaster } from "sonner";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import AuthInitializer from "./components/auth/AuthInitializer";
 
 function App() {
   return (
     <BrowserRouter>
       <Toaster richColors position="top-right" />
+      <AuthInitializer />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route element={<DashboardLayout />}>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/posts" element={<PostsPage />} />
-          <Route path="/calendar" element={<CalendarPage />} />
-          <Route path="/social-accounts" element={<SocialAccountsPage />} />
-          <Route path="/analytics" element={<AnalyticsPage />} />
-          <Route path="/team-members" element={<TeamMembersPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+
+        <Route element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/posts" element={<PostsPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/social-accounts" element={<SocialAccountsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/team-members" element={<TeamMembersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>
