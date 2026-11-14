@@ -1,8 +1,15 @@
 import { Outlet } from "react-router";
 import AppSidebar from "../layout/AppSidebar";
 import AppHeader from "../layout/AppHeader";
+import { useEffect } from "react";
+import useWorkspaceStore from "../../stores/workspace.store";
 
 export default function DashboardLayout() {
+  const fetchWorkspaces = useWorkspaceStore((state) => state.fetchWorkspaces);
+
+  useEffect(() => {
+    void fetchWorkspaces();
+  }, [fetchWorkspaces]);
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <AppSidebar />
