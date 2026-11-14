@@ -1,9 +1,10 @@
 import { create } from "zustand";
+
 import {
-  createWorkspace,
-  deleteWorkspace,
+  createWorkspace as createWorkspaceApi,
+  deleteWorkspace as deleteWorkspaceApi,
   getAllWorkspaces,
-  updateWorkspace,
+  updateWorkspace as updateWorkspaceApi,
   type CreateWorkspaceInput,
   type UpdateWorkspaceInput,
   type Workspace,
@@ -25,62 +26,117 @@ const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspaces: [],
   currentWorkspace: null,
   isLoading: false,
+
+  // Fetch all workspaces
   fetchWorkspaces: async () => {
     set({ isLoading: true });
+
     try {
       const workspaces = await getAllWorkspaces();
-      set((state) => ({
+
+      const savedWorkspaceId = localStorage.getItem("selectedWorkspaceId");
+
+      const selectedWorkspace = workspaces.find(
+        (workspace) => workspace.id === savedWorkspaceId,
+      );
+
+      const currentWorkspace = selectedWorkspace ?? workspaces[0] ?? null;
+
+      set({
         workspaces,
-        currentWorkspace: workspaces.find(
-          (workspaces) => workspaces.id === state.currentWorkspace?.id,
-        ),
-      })) ??
-        workspaces[0] ??
-        null;
+        currentWorkspace,
+      });
+
+      if (currentWorkspace) {
+        localStorage.setItem("selectedWorkspaceId", currentWorkspace.id);
+      } else {
+        localStorage.removeItem("selectedWorkspaceId");
+      }
     } finally {
       set({ isLoading: false });
     }
   },
+
+  // Create workspace
   createWorkspace: async (data) => {
-    await createWorkspace(data);
+    await createWorkspaceApi(data);
+
     const workspaces = await getAllWorkspaces();
-    const createWorkspaces = workspaces.find(
-      (workspaces) => workspaces.slug === data.slug,
+
+    const createdWorkspace = workspaces.find(
+      (workspace) => workspace.slug === data.slug,
     );
+
+    const selectedWorkspace = createdWorkspace ?? workspaces[0] ?? null;
+
+    if (selectedWorkspace) {
+      localStorage.setItem("selectedWorkspaceId", selectedWorkspace.id);
+    }
+
     set({
       workspaces,
-      currentWorkspace: createWorkspaces ?? workspaces[0] ?? null,
+      currentWorkspace: selectedWorkspace,
     });
   },
+
+  // Select workspace
   selectWorkspace: (workspace) => {
+    localStorage.setItem("selectedWorkspaceId", workspace.id);
+
     set({ currentWorkspace: workspace });
   },
+
+  // Update workspace
   updateWorkspace: async (slug, data) => {
-    await updateWorkspace(slug, data);
+    const previousWorkspace = get().currentWorkspace;
+
+    await updateWorkspaceApi(slug, data);
+
     const workspaces = await getAllWorkspaces();
-    set((state) => ({
-      workspaces,
-      currentWorkspace: workspaces.find(
-        (wokspace) => wokspace.id === state.currentWorkspace?.id,
-      ),
-    })) ??
+
+    const selectedWorkspace =
+      workspaces.find((workspace) => workspace.id === previousWorkspace?.id) ??
       workspaces[0] ??
       null;
-  },
-  deleteWorkspace: async (slug) => {
-    const currentWorkspace = get().currentWorkspace;
-    await deleteWorkspace(slug);
-    const workspaces = await getAllWorkspaces();
+
+    if (selectedWorkspace) {
+      localStorage.setItem("selectedWorkspaceId", selectedWorkspace.id);
+    } else {
+      localStorage.removeItem("selectedWorkspaceId");
+    }
+
     set({
       workspaces,
-      currentWorkspace:
-        currentWorkspace?.slug === slug
-          ? (workspaces[0] ?? null)
-          : (workspaces.find(
-              (workspace) => workspace.id === currentWorkspace?.id,
-            ) ??
-            workspaces[0] ??
-            null),
+      currentWorkspace: selectedWorkspace,
+    });
+  },
+
+  // Delete workspace
+  deleteWorkspace: async (slug) => {
+    const currentWorkspace = get().currentWorkspace;
+
+    await deleteWorkspaceApi(slug);
+
+    const workspaces = await getAllWorkspaces();
+
+    const selectedWorkspace =
+      currentWorkspace?.slug === slug
+        ? (workspaces[0] ?? null)
+        : (workspaces.find(
+            (workspace) => workspace.id === currentWorkspace?.id,
+          ) ??
+          workspaces[0] ??
+          null);
+
+    if (selectedWorkspace) {
+      localStorage.setItem("selectedWorkspaceId", selectedWorkspace.id);
+    } else {
+      localStorage.removeItem("selectedWorkspaceId");
+    }
+
+    set({
+      workspaces,
+      currentWorkspace: selectedWorkspace,
     });
   },
 }));
