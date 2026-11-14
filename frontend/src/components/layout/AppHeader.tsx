@@ -2,8 +2,25 @@ import { Bell, ChevronDown } from "lucide-react";
 
 import { Button } from "../ui/button";
 import ThemeToggle from "./ThemeToggle";
+import { useNavigate } from "react-router";
+import useAuthStore from "../../stores/auth.store";
+import { toast } from "sonner";
 
 export default function AppHeader() {
+  const navigate = useNavigate();
+  const logout = useAuthStore((state) => state.logout);
+  const user = useAuthStore((state) => state.user);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Logged out successfully");
+      navigate("/login", { replace: true });
+    } catch {
+      toast.error("Logout failed");
+    }
+  };
+
   return (
     <header className="flex h-16 items-center justify-between border-b px-6">
       <div>
@@ -22,8 +39,11 @@ export default function AppHeader() {
         </Button>
 
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
-          IK
+          {user?.name.charAt(0).toUpperCase() || "U"}
         </div>
+        <Button variant="outline" onClick={handleLogout}>
+          Logout
+        </Button>
       </div>
     </header>
   );

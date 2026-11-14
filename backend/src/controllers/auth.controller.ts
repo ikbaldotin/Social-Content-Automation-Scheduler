@@ -3,6 +3,7 @@ import { loginSchema, registerSchema } from "../validate/auth.schema";
 import { prisma } from "../utils/prisma";
 import bcrypt from "bcrypt";
 import { generateToken } from "../utils/helper";
+import env from "../config/env";
 const register = async (req: Request, res: Response) => {
   try {
     const result = registerSchema.safeParse(req.body);
@@ -29,7 +30,7 @@ const register = async (req: Request, res: Response) => {
     const token = generateToken(user.id);
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
+      secure: env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
@@ -63,7 +64,7 @@ const login = async (req: Request, res: Response) => {
     const token = generateToken(user.id);
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
+      secure: env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });

@@ -21,7 +21,7 @@ interface AuthState {
 const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
   login: async (data) => {
     set({ isLoading: true });
     try {
@@ -35,7 +35,7 @@ const useAuthStore = create<AuthState>((set) => ({
     }
   },
   register: async (data) => {
-    set({ isLoading: false });
+    set({ isLoading: true });
     try {
       const response = await registerUser(data);
       set({
