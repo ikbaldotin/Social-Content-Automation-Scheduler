@@ -7,14 +7,19 @@ import SocialAccountsPage from "./pages/SocialAccountsPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import TeamMembersPage from "./pages/TeamMembersPage";
 import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import { Toaster } from "sonner";
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster richColors position="top-right" />
       <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route element={<DashboardLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/posts" element={<PostsPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
