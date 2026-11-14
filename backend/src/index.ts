@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import authRouter from "./routers/auth.route";
 import wokspaceRouter from "./routers/workspace.route";
 import membershipRouter from "./routers/membership.route";
@@ -14,12 +15,19 @@ import redis from "./config/redis";
 import { prisma } from "./utils/prisma";
 import publishWorker from "./workers/publish.worker";
 import instagramRouter from "./routers/instagram.route";
+import env from "./config/env";
 dotenv.config();
 const app = express();
 const server = createServer(app);
 app.use(express.json());
 app.use(cookieParser());
 const port = process.env.PORT;
+app.use(
+  cors({
+    origin: env.FRONTEND_URL,
+    credentials: true,
+  }),
+);
 app.use("/api/auth", authRouter);
 app.use("/api/workspace", wokspaceRouter);
 app.use("/api/membership", membershipRouter);

@@ -9,6 +9,7 @@ const envSchema = z.object({
   INSTAGRAM_ACCESS_TOKEN: z.string(),
   TOKEN_ENCRYPTION_KEY: z.string(),
   INSTAGRAM_ACCOUNT_ID: z.string(),
+  FRONTEND_URL: z.url(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
