@@ -8,7 +8,8 @@ import CreateWorkspaceDialog from "../workspace/CreateWorkspaceDialog";
 
 import useAuthStore from "../../stores/auth.store";
 import useWorkspaceStore from "../../stores/workspace.store";
-
+import UpdateWorkspaceDialog from "../workspace/UpdateWorkspaceDialog";
+import DeleteWorkspaceDialog from "../workspace/DeleteWorkspaceDialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -74,6 +75,8 @@ export default function AppHeader() {
 
           {/* Create workspace dialog */}
           <CreateWorkspaceDialog />
+          <UpdateWorkspaceDialog />
+          <DeleteWorkspaceDialog />
         </div>
       </div>
 

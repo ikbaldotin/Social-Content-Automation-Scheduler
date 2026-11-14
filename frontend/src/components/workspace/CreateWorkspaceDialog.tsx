@@ -64,7 +64,7 @@ export default function CreateWorkspaceDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger
         render={
-          <Button variant="ghost" className="w-full justify-start">
+          <Button variant="ghost" className="w-auto shrink-0 justify-start">
             <Plus className="mr-2 h-4 w-4" />
             Create Workspace
           </Button>
