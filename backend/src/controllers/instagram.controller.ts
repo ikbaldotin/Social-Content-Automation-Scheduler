@@ -14,7 +14,7 @@ const getInstagramProfile = async (req: Request, res: Response) => {
       env.INSTAGRAM_ACCOUNT_ID,
       accessToken,
       {
-        fields: "id,username",
+        fields: "id",
       },
     );
 

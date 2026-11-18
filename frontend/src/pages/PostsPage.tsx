@@ -4,8 +4,11 @@ import { FileText, RefreshCw } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 
+import EditPostDialog from "../components/posts/EditPostDialog";
+
 import usePostStore from "../stores/post.store";
 import useWorkspaceStore from "../stores/workspace.store";
+import CreatePostDialog from "./CreatePostDialog";
 
 export default function PostsPage() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -25,8 +28,9 @@ export default function PostsPage() {
     return (
       <div className="py-12 text-center">
         <h2 className="text-xl font-semibold">No workspace selected</h2>
-        <p className="mt-2 text-muted-foreground">
-          Select or create a workspace to view your posts.
+
+        <p className="mt-2 text-sm text-muted-foreground">
+          Select a workspace to manage posts.
         </p>
       </div>
     );
@@ -34,32 +38,45 @@ export default function PostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Page Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Posts</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Posts</h1>
+
           <p className="text-sm text-muted-foreground">
-            Manage posts in {currentWorkspace.name}
+            Manage posts in {currentWorkspace.name}.
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={() => void fetchPosts(currentWorkspace.slug).catch(() => {})}
-          disabled={isLoading}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={() =>
+              void fetchPosts(currentWorkspace.slug).catch(() => {})
+            }
+            disabled={isLoading}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
+
+          <CreatePostDialog />
+        </div>
       </div>
 
+      {/* Loading State */}
       {isLoading ? (
-        <p className="py-12 text-center text-muted-foreground">
-          Loading posts...
-        </p>
-      ) : error ? (
         <Card>
-          <CardContent className="py-10 text-center">
-            <p className="text-destructive">{error}</p>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            Loading posts...
+          </CardContent>
+        </Card>
+      ) : error ? (
+        /* Error State */
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-sm text-destructive">{error}</p>
+
             <Button
               variant="outline"
               className="mt-4"
@@ -72,36 +89,57 @@ export default function PostsPage() {
           </CardContent>
         </Card>
       ) : posts.length === 0 ? (
+        /* Empty State */
         <Card>
-          <CardContent className="flex flex-col items-center py-12 text-center">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <FileText className="mb-4 h-10 w-10 text-muted-foreground" />
-            <h2 className="font-semibold">No posts yet</h2>
+
+            <h2 className="text-lg font-semibold">No posts yet</h2>
+
             <p className="mt-2 text-sm text-muted-foreground">
-              Create your first post for this workspace.
+              Create your first post to get started.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4">
+        /* Posts List */
+        <div className="grid gap-4 md:grid-cols-2">
           {posts.map((post) => (
             <Card key={post.id}>
-              <CardContent className="space-y-3 p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm font-medium">
-                    {post.socialAccount.platform}
-                  </span>
+              <CardContent className="space-y-4 pt-6">
+                {/* Post Header */}
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-semibold">
+                      {post.socialAccount.platform}
+                    </p>
+
+                    <p className="text-xs text-muted-foreground">
+                      {post.socialAccount.accountName}
+                    </p>
+                  </div>
 
                   <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
                     {post.status}
                   </span>
                 </div>
 
-                <p className="whitespace-pre-wrap text-sm">{post.content}</p>
+                {/* Post Content */}
+                <p className="whitespace-pre-wrap break-words text-sm">
+                  {post.content}
+                </p>
 
-                <div className="flex flex-wrap justify-between gap-2 text-xs text-muted-foreground">
-                  <span>{post.socialAccount.accountName}</span>
-                  <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                </div>
+                {/* Post Date */}
+                <p className="text-xs text-muted-foreground">
+                  Created: {new Date(post.createdAt).toLocaleString()}
+                </p>
+
+                {/* Post Actions */}
+                {post.status === "DRAFT" && (
+                  <div className="flex items-center gap-2 border-t pt-3">
+                    <EditPostDialog post={post} />
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}

@@ -29,7 +29,7 @@ interface PostState {
   cancelScheduledPost: (slug: string, postId: string) => Promise<void>;
 }
 
-const usePostState = create<PostState>((set) => ({
+const usePostStore = create<PostState>((set) => ({
   posts: [],
   isLoading: false,
   error: null,
@@ -70,4 +70,4 @@ const usePostState = create<PostState>((set) => ({
   },
 }));
 
-export default usePostState;
+export default usePostStore;
