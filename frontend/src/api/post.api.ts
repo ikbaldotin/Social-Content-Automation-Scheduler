@@ -32,7 +32,29 @@ interface PostsResponse {
   message: string;
   posts: Post[];
 }
-
+export interface PublishAttempt {
+  id: string;
+  postId: string;
+  attemptNo: number;
+  success: boolean;
+  error: string | null;
+  attemptedAt: string;
+  updatedAt: string;
+}
+export interface PostMedia {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  publicId: string;
+  mimeType: string;
+  size: number;
+  postId: string;
+  createdAt: string;
+}
+export interface PostDetails extends Post {
+  medias: PostMedia[];
+  publishAttempts: PublishAttempt[];
+}
 interface PostResponse {
   message: string;
   post: Post;
@@ -57,8 +79,8 @@ export const getAllPosts = async (slug: string): Promise<Post[]> => {
 export const getPostById = async (
   slug: string,
   postId: string,
-): Promise<Post> => {
-  const response = await api.get<PostResponse>(`/post/${slug}/posts/${postId}`);
+): Promise<PostDetails> => {
+  const response = await api.get(`/post/${slug}/posts/${postId}`);
   return response.data.post;
 };
 

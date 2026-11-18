@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FileText, RefreshCw } from "lucide-react";
 
 import { Button } from "../components/ui/button";
@@ -7,13 +7,58 @@ import { Card, CardContent } from "../components/ui/card";
 import EditPostDialog from "../components/posts/EditPostDialog";
 import DeletePostDialog from "../components/posts/DeletePostDialog";
 import CancelScheduledPostDialog from "../components/posts/CancelScheduledPostDialog";
+import CreatePostDialog from "../components/posts/CreatePostDialog";
+import ReschedulePostDialog from "../components/posts/ReschedulePostDialog";
+import PostDetailsDialog from "../components/posts/PostDetailsDialog";
 
 import usePostStore from "../stores/post.store";
 import useWorkspaceStore from "../stores/workspace.store";
-import CreatePostDialog from "../components/posts/CreatePostDialog";
-import ReschedulePostDialog from "../components/posts/ReschedulePostDialog";
+
+type PostStatus =
+  | "DRAFT"
+  | "SCHEDULED"
+  | "PUBLISHING"
+  | "PUBLISHED"
+  | "FAILED"
+  | "CANCELLED";
+
+type PostFilter = "ALL" | PostStatus;
+
+const filters: { label: string; value: PostFilter }[] = [
+  { label: "All Posts", value: "ALL" },
+  { label: "Draft", value: "DRAFT" },
+  { label: "Scheduled", value: "SCHEDULED" },
+  { label: "Publishing", value: "PUBLISHING" },
+  { label: "Published", value: "PUBLISHED" },
+  { label: "Failed", value: "FAILED" },
+  { label: "Cancelled", value: "CANCELLED" },
+];
+
+// Status badge styles
+function getStatusStyles(status: PostStatus): string {
+  const styles: Record<PostStatus, string> = {
+    DRAFT: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+
+    SCHEDULED: "bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300",
+
+    PUBLISHING:
+      "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300",
+
+    PUBLISHED:
+      "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300",
+
+    FAILED: "bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300",
+
+    CANCELLED:
+      "bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300",
+  };
+
+  return styles[status];
+}
 
 export default function PostsPage() {
+  const [activeFilter, setActiveFilter] = useState<PostFilter>("ALL");
+
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
   const posts = usePostStore((state) => state.posts);
@@ -26,6 +71,15 @@ export default function PostsPage() {
       void fetchPosts(currentWorkspace.slug).catch(() => {});
     }
   }, [currentWorkspace?.slug, fetchPosts]);
+
+  // Filter posts by selected status
+  const filteredPosts = useMemo(() => {
+    if (activeFilter === "ALL") {
+      return posts;
+    }
+
+    return posts.filter((post) => post.status === activeFilter);
+  }, [posts, activeFilter]);
 
   if (!currentWorkspace) {
     return (
@@ -62,8 +116,29 @@ export default function PostsPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
+
           <CreatePostDialog />
         </div>
+      </div>
+
+      {/* Status Filters */}
+      <div className="flex flex-wrap gap-2">
+        {filters.map((filter) => (
+          <Button
+            key={filter.value}
+            size="sm"
+            variant={activeFilter === filter.value ? "default" : "outline"}
+            onClick={() => setActiveFilter(filter.value)}
+          >
+            {filter.label}
+
+            <span className="ml-2 text-xs opacity-70">
+              {filter.value === "ALL"
+                ? posts.length
+                : posts.filter((post) => post.status === filter.value).length}
+            </span>
+          </Button>
+        ))}
       </div>
 
       {/* Loading State */}
@@ -103,10 +178,33 @@ export default function PostsPage() {
             </p>
           </CardContent>
         </Card>
+      ) : filteredPosts.length === 0 ? (
+        /* No Matching Posts State */
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <FileText className="mb-4 h-10 w-10 text-muted-foreground" />
+
+            <h2 className="text-lg font-semibold">
+              No {activeFilter.toLowerCase()} posts
+            </h2>
+
+            <p className="mt-2 text-sm text-muted-foreground">
+              There are no posts with this status.
+            </p>
+
+            <Button
+              variant="outline"
+              className="mt-4"
+              onClick={() => setActiveFilter("ALL")}
+            >
+              Show all posts
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
-        /* Posts List */
+        /* Filtered Posts List */
         <div className="grid gap-4 md:grid-cols-2">
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <Card key={post.id}>
               <CardContent className="space-y-4 pt-6">
                 {/* Post Header */}
@@ -121,7 +219,12 @@ export default function PostsPage() {
                     </p>
                   </div>
 
-                  <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
+                  {/* Colored Status Badge */}
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${getStatusStyles(
+                      post.status,
+                    )}`}
+                  >
                     {post.status}
                   </span>
                 </div>
@@ -148,6 +251,11 @@ export default function PostsPage() {
                   )}
                 </div>
 
+                {/* View Post Details */}
+                <div className="border-t pt-3">
+                  <PostDetailsDialog slug={currentWorkspace.slug} post={post} />
+                </div>
+
                 {/* Draft Actions */}
                 {post.status === "DRAFT" && (
                   <div className="flex flex-wrap items-center gap-2 border-t pt-3">
@@ -164,6 +272,7 @@ export default function PostsPage() {
                       postId={post.id}
                       scheduledAt={post.scheduledAt}
                     />
+
                     <CancelScheduledPostDialog post={post} />
                   </div>
                 )}
