@@ -30,7 +30,7 @@ function App() {
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/social-accounts" element={<SocialAccountsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/team-members" element={<TeamMembersPage />} />
+            <Route path="team" element={<TeamMembersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>

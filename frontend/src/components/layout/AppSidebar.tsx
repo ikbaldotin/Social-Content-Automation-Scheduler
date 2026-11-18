@@ -16,7 +16,7 @@ const navigation = [
   { title: "Calendar", icon: CalendarDays, path: "/calendar" },
   { title: "Social Accounts", icon: Camera, path: "/social-accounts" },
   { title: "Analytics", icon: ChartNoAxesCombined, path: "/analytics" },
-  { title: "Team Members", icon: Users, path: "/team-members" },
+  { title: "Team Members", icon: Users, path: "/team" },
   { title: "Settings", icon: Settings, path: "/settings" },
 ];
 
