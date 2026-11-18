@@ -9,6 +9,7 @@ import EditPostDialog from "../components/posts/EditPostDialog";
 import usePostStore from "../stores/post.store";
 import useWorkspaceStore from "../stores/workspace.store";
 import CreatePostDialog from "./CreatePostDialog";
+import DeletePostDialog from "../components/posts/DeletePostDialog";
 
 export default function PostsPage() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -138,6 +139,7 @@ export default function PostsPage() {
                 {post.status === "DRAFT" && (
                   <div className="flex items-center gap-2 border-t pt-3">
                     <EditPostDialog post={post} />
+                    <DeletePostDialog post={post} />
                   </div>
                 )}
               </CardContent>
