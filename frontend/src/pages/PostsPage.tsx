@@ -5,11 +5,12 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 
 import EditPostDialog from "../components/posts/EditPostDialog";
+import DeletePostDialog from "../components/posts/DeletePostDialog";
+import CancelScheduledPostDialog from "../components/posts/CancelScheduledPostDialog";
 
 import usePostStore from "../stores/post.store";
 import useWorkspaceStore from "../stores/workspace.store";
-import CreatePostDialog from "./CreatePostDialog";
-import DeletePostDialog from "../components/posts/DeletePostDialog";
+import CreatePostDialog from "../components/posts/CreatePostDialog";
 
 export default function PostsPage() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -60,7 +61,6 @@ export default function PostsPage() {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-
           <CreatePostDialog />
         </div>
       </div>
@@ -131,15 +131,34 @@ export default function PostsPage() {
                 </p>
 
                 {/* Post Date */}
-                <p className="text-xs text-muted-foreground">
-                  Created: {new Date(post.createdAt).toLocaleString()}
-                </p>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <p>Created: {new Date(post.createdAt).toLocaleString()}</p>
 
-                {/* Post Actions */}
+                  {post.scheduledAt && (
+                    <p>
+                      Scheduled: {new Date(post.scheduledAt).toLocaleString()}
+                    </p>
+                  )}
+
+                  {post.publishedAt && (
+                    <p>
+                      Published: {new Date(post.publishedAt).toLocaleString()}
+                    </p>
+                  )}
+                </div>
+
+                {/* Draft Actions */}
                 {post.status === "DRAFT" && (
-                  <div className="flex items-center gap-2 border-t pt-3">
+                  <div className="flex flex-wrap items-center gap-2 border-t pt-3">
                     <EditPostDialog post={post} />
                     <DeletePostDialog post={post} />
+                  </div>
+                )}
+
+                {/* Scheduled Actions */}
+                {post.status === "SCHEDULED" && (
+                  <div className="flex items-center gap-2 border-t pt-3">
+                    <CancelScheduledPostDialog post={post} />
                   </div>
                 )}
               </CardContent>

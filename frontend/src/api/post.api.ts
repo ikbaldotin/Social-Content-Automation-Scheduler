@@ -87,7 +87,18 @@ export const deletePost = async (
 ): Promise<void> => {
   await api.delete(`/post/${slug}/posts/${postId}`);
 };
+export const schedulePost = async (
+  slug: string,
+  postId: string,
+  scheduledAt: string,
+) => {
+  const response = await api.patch(
+    `/schedule/${slug}/posts/${postId}/schedule`,
+    { scheduledAt },
+  );
 
+  return response.data;
+};
 export const cancelScheduledPost = async (
   slug: string,
   postId: string,
