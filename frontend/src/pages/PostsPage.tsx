@@ -11,6 +11,7 @@ import CancelScheduledPostDialog from "../components/posts/CancelScheduledPostDi
 import usePostStore from "../stores/post.store";
 import useWorkspaceStore from "../stores/workspace.store";
 import CreatePostDialog from "../components/posts/CreatePostDialog";
+import ReschedulePostDialog from "../components/posts/ReschedulePostDialog";
 
 export default function PostsPage() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
@@ -158,6 +159,11 @@ export default function PostsPage() {
                 {/* Scheduled Actions */}
                 {post.status === "SCHEDULED" && (
                   <div className="flex items-center gap-2 border-t pt-3">
+                    <ReschedulePostDialog
+                      slug={currentWorkspace.slug}
+                      postId={post.id}
+                      scheduledAt={post.scheduledAt}
+                    />
                     <CancelScheduledPostDialog post={post} />
                   </div>
                 )}

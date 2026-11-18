@@ -99,6 +99,18 @@ export const schedulePost = async (
 
   return response.data;
 };
+export const reschedulePost = async (
+  slug: string,
+  postId: string,
+  scheduledAt: string,
+) => {
+  const response = await api.patch(
+    `/schedule/${slug}/posts/${postId}/reschedule`,
+    { scheduledAt },
+  );
+
+  return response.data;
+};
 export const cancelScheduledPost = async (
   slug: string,
   postId: string,

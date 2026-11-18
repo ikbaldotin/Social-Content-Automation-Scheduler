@@ -6,6 +6,7 @@ import {
   deletePost,
   getAllPosts,
   schedulePost as schedulePostApi,
+  reschedulePost as reschedulePostApi,
   updatePost,
   type CreatePostInput,
   type Post,
@@ -28,6 +29,11 @@ interface PostState {
 
   deletePost: (slug: string, postId: string) => Promise<void>;
   schedulePost: (
+    slug: string,
+    postId: string,
+    scheduledAt: string,
+  ) => Promise<void>;
+  reschedulePost: (
     slug: string,
     postId: string,
     scheduledAt: string,
@@ -95,6 +101,17 @@ const usePostStore = create<PostState>((set) => ({
       set({
         error: "Failed to schedule post",
       });
+      throw error;
+    }
+  },
+  reschedulePost: async (slug, postId, scheduledAt) => {
+    try {
+      await reschedulePostApi(slug, postId, scheduledAt);
+
+      const posts = await getAllPosts(slug);
+      set({ posts });
+    } catch (error) {
+      set({ error: "Failed to reschedule post" });
       throw error;
     }
   },
