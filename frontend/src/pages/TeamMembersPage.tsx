@@ -1,40 +1,42 @@
 import { useEffect } from "react";
-import { Users, RefreshCw, UserPlus } from "lucide-react";
-
-import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
-
+import { RefreshCw, Users } from "lucide-react";
 import useWorkspaceStore from "../stores/workspace.store";
 import useMembershipStore from "../stores/membership.store";
+import { Button } from "../components/ui/button";
+import AddMemberDialog from "../components/team/AddMemberDialog";
+import { Card, CardContent } from "../components/ui/card";
+import UpdateMemberRoleDialog from "../components/team/UpdateMemberRoleDialog";
+import RemoveMemberDialog from "../components/team/RemoveMemberDialog";
 
 export default function TeamMembersPage() {
   const currentWorkspace = useWorkspaceStore((state) => state.currentWorkspace);
 
-  const members = useMembershipStore((state) => state.members);
-  const isLoading = useMembershipStore((state) => state.isLoading);
-  const error = useMembershipStore((state) => state.error);
-
-  const fetchMembers = useMembershipStore((state) => state.fetchMembers);
-
-  const clearMembers = useMembershipStore((state) => state.clearMembers);
+  const { members, isLoading, error, fetchMembers, clearMembers } =
+    useMembershipStore();
 
   useEffect(() => {
-    if (currentWorkspace?.slug) {
+    if (!currentWorkspace?.slug) {
       clearMembers();
-
-      void fetchMembers(currentWorkspace.slug).catch(() => {});
-    } else {
-      clearMembers();
+      return;
     }
+
+    clearMembers();
+    fetchMembers(currentWorkspace.slug);
   }, [currentWorkspace?.slug, fetchMembers, clearMembers]);
+
+  const handleRefresh = () => {
+    if (currentWorkspace?.slug) {
+      fetchMembers(currentWorkspace.slug);
+    }
+  };
 
   if (!currentWorkspace) {
     return (
-      <div className="py-12 text-center">
-        <h2 className="text-xl font-semibold">No workspace selected</h2>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Select a workspace to manage team members.
+      <div className="flex flex-col items-center justify-center py-16 text-center">
+        <Users className="mb-4 h-10 w-10 text-muted-foreground" />
+        <h2 className="text-lg font-semibold">No workspace selected</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Select a workspace to view its team members.
         </p>
       </div>
     );
@@ -42,11 +44,10 @@ export default function TeamMembersPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Page header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Team Members</h1>
-
           <p className="text-sm text-muted-foreground">
             Manage members of {currentWorkspace.name}.
           </p>
@@ -55,116 +56,113 @@ export default function TeamMembersPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() =>
-              void fetchMembers(currentWorkspace.slug).catch(() => {})
-            }
+            size="icon"
+            onClick={handleRefresh}
             disabled={isLoading}
+            aria-label="Refresh members"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </Button>
 
-          <Button disabled>
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Member
-          </Button>
+          <AddMemberDialog />
         </div>
       </div>
 
-      {/* Member Count */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardContent className="flex items-center gap-4 pt-6">
-            <div className="rounded-lg bg-secondary p-3">
-              <Users className="h-5 w-5" />
-            </div>
+      {/* Member count */}
+      <Card>
+        <CardContent className="flex items-center gap-3 p-5">
+          <div className="rounded-lg bg-primary/10 p-3">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
 
-            <div>
-              <p className="text-sm text-muted-foreground">Total Members</p>
+          <div>
+            <p className="text-sm text-muted-foreground">Total members</p>
+            <p className="text-2xl font-bold">{members.length}</p>
+          </div>
+        </CardContent>
+      </Card>
 
-              <p className="text-2xl font-bold">{members.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Loading */}
+      {isLoading && (
+        <div className="py-10 text-center text-sm text-muted-foreground">
+          Loading team members...
+        </div>
+      )}
 
-      {/* Loading State */}
-      {isLoading ? (
+      {/* Error */}
+      {!isLoading && error && (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Loading team members...
-          </CardContent>
-        </Card>
-      ) : error ? (
-        /* Error State */
-        <Card>
-          <CardContent className="py-8 text-center">
+          <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
             <p className="text-sm text-destructive">{error}</p>
 
-            <Button
-              variant="outline"
-              className="mt-4"
-              onClick={() =>
-                void fetchMembers(currentWorkspace.slug).catch(() => {})
-              }
-            >
+            <Button variant="outline" onClick={handleRefresh}>
               Try again
             </Button>
           </CardContent>
         </Card>
-      ) : members.length === 0 ? (
-        /* Empty State */
+      )}
+
+      {/* Empty state */}
+      {!isLoading && !error && members.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Users className="mb-4 h-10 w-10 text-muted-foreground" />
+            <Users className="mb-3 h-10 w-10 text-muted-foreground" />
 
-            <h2 className="text-lg font-semibold">No team members found</h2>
+            <h2 className="font-semibold">No team members found</h2>
 
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground">
               Add members to collaborate in this workspace.
             </p>
           </CardContent>
         </Card>
-      ) : (
-        /* Members List */
+      )}
+
+      {/* Members list */}
+      {!isLoading && !error && members.length > 0 && (
         <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {members.map((member) => {
-                const memberName =
-                  member.name ?? member.user?.name ?? "Unknown Member";
+          <CardContent className="divide-y p-0">
+            {members.map((member) => {
+              const memberName =
+                member.name ?? member.user?.name ?? "Unknown Member";
 
-                const memberEmail =
-                  member.email ?? member.user?.email ?? "No email available";
+              const memberEmail =
+                member.email ?? member.user?.email ?? "No email available";
 
-                const initial = memberName.charAt(0).toUpperCase();
+              const initial = memberName.charAt(0).toUpperCase();
 
-                return (
-                  <div
-                    key={member.id}
-                    className="flex flex-wrap items-center justify-between gap-3 border-b pb-4 last:border-0 last:pb-0"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary font-semibold">
-                        {initial}
-                      </div>
-
-                      <div>
-                        <p className="font-medium">{memberName}</p>
-
-                        <p className="text-xs text-muted-foreground">
-                          {memberEmail}
-                        </p>
-                      </div>
+              return (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between gap-4 p-4"
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                      {initial}
                     </div>
 
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-medium">
-                      {member.role}
-                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{memberName}</p>
+
+                      <p className="truncate text-sm text-muted-foreground">
+                        {memberEmail}
+                      </p>
+                    </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <span className="shrink-0 rounded-full bg-muted px-3 py-1 text-xs font-medium">
+                    {member.role}
+                  </span>
+                  {member.role !== "OWNER" && (
+                    <>
+                      <UpdateMemberRoleDialog member={member} />
+                      <RemoveMemberDialog member={member} />
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
       )}

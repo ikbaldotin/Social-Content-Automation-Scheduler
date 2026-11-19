@@ -115,11 +115,13 @@ const getAllMembers = async (req: Request, res: Response) => {
       },
       select: {
         id: true,
+        userId: true,
         role: true,
         createdAt: true,
         user: {
           select: {
             id: true,
+            name: true,
             email: true,
             createdAt: true,
           },

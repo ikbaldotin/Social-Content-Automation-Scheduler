@@ -66,6 +66,8 @@ const useMembershipStore = create<MembershipState>((set) => ({
   },
 
   updateMemberRole: async (slug, userId, data) => {
+    set({ isLoading: true, error: null });
+
     try {
       await updateMemberRoleApi(slug, userId, data);
 
@@ -74,6 +76,8 @@ const useMembershipStore = create<MembershipState>((set) => ({
     } catch (error) {
       set({ error: "Failed to update member role" });
       throw error;
+    } finally {
+      set({ isLoading: false });
     }
   },
 
