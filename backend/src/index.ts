@@ -13,12 +13,14 @@ import { createServer } from "http";
 import publishQueue from "./queues/publish.queue";
 import redis from "./config/redis";
 import { prisma } from "./utils/prisma";
-import publishWorker from "./workers/publish.worker";
+
 import instagramRouter from "./routers/instagram.route";
 import env from "./config/env";
+import { initializeSocket } from "./config/socket";
 dotenv.config();
 const app = express();
 const server = createServer(app);
+const io = initializeSocket(server);
 app.use(express.json());
 app.use(cookieParser());
 const port = process.env.PORT;
@@ -61,13 +63,6 @@ const shutdown = async (signal: string) => {
     console.log("HTTP server closed.");
   } catch (error) {
     console.error("HTTP server shutdown error:", error);
-  }
-
-  try {
-    await publishWorker.close();
-    console.log("Publish worker closed.");
-  } catch (error) {
-    console.error("Worker shutdown error:", error);
   }
 
   try {

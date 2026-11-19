@@ -4,18 +4,24 @@ import { prisma } from "../utils/prisma";
 
 import publishPost from "../providers/publish.provider";
 import redis from "../config/redis";
+import socketEmitter from "../config/socketEmitter";
 import { decryptToken } from "../utils/token-encryption";
+
 interface PublishJobData {
   postId: string;
   scheduleVersion: number;
 }
+
 const LOCK_DURATION = 2 * 60 * 1000;
 const LOCK_RENEW_INTERVAL = 30 * 1000;
+
 const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
   const { postId, scheduleVersion } = job.data;
+
   const totalAttempts = Number(job.opts.attempts ?? 1);
   const isFinalAttempt = job.attemptsMade + 1 >= totalAttempts;
   const jobAttempt = job.attemptsMade + 1;
+
   const post = await prisma.post.findUnique({
     where: {
       id: postId,
@@ -25,25 +31,31 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
       medias: true,
     },
   });
+
   if (!post) {
     console.log("Post not found. Skipping job.");
     return;
   }
+
   if (post.scheduleVersion !== scheduleVersion) {
     console.log("Stale job (schedule version changed). Skipping.");
     return;
   }
+
   if (post.status !== "SCHEDULED" && post.status !== "PUBLISHING") {
     console.log(`Post status is ${post.status}. Skipping job.`);
     return;
   }
+
   if (!post.scheduledAt || post.scheduledAt.getTime() > Date.now()) {
     console.log("Post is not due yet. Skipping job.");
     return;
   }
+
   const lockToken = randomUUID();
   const now = new Date();
   const lockExpiresAt = new Date(now.getTime() + LOCK_DURATION);
+
   const claimedPost = await prisma.post.updateMany({
     where: {
       id: post.id,
@@ -66,11 +78,14 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
       publishingLockExpiresAt: lockExpiresAt,
     },
   });
+
   if (claimedPost.count === 0) {
     console.log("Another worker owns this post. Delaying job.");
+
     if (!token) {
       throw new Error("BullMQ lock token is missing.");
     }
+
     const currentPost = await prisma.post.findUnique({
       where: {
         id: post.id,
@@ -79,12 +94,26 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
         publishingLockExpiresAt: true,
       },
     });
+
     const retryAt =
       currentPost?.publishingLockExpiresAt?.getTime() ?? Date.now() + 5000;
+
     await job.moveToDelayed(Math.max(Date.now() + 1000, retryAt), token);
+
     throw new DelayedError();
   }
+
   console.log(`Publishing lock acquired for post ${postId}`);
+
+  // Notify workspace members that publishing has started.
+  socketEmitter
+    .to(`workspace:${post.workspaceId}`)
+    .emit("post:status-updated", {
+      postId: post.id,
+      workspaceId: post.workspaceId,
+      status: "PUBLISHING",
+    });
+
   const lockInterval = setInterval(() => {
     void prisma.post
       .updateMany({
@@ -112,6 +141,7 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
     if (!post.socialAccount.isActive) {
       throw new Error("Social account is inactive");
     }
+
     const currentAttempt =
       (await prisma.publishAttempt.count({
         where: {
@@ -122,6 +152,7 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
     console.log(
       `Publishing post ${post.id} | Job attempt ${jobAttempt}/${totalAttempts} | History attempt ${currentAttempt}`,
     );
+
     if (!post.socialAccount.accessToken) {
       throw new Error("Instagram access token is missing");
     }
@@ -131,7 +162,9 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
     if (!media?.fileUrl) {
       throw new Error("Post image is missing");
     }
+
     const accessToken = decryptToken(post.socialAccount.accessToken);
+
     const result = await publishPost({
       postId: post.id,
       content: post.content,
@@ -141,9 +174,13 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
       accessToken: accessToken,
       imageUrl: media.fileUrl,
     });
+
     if (!result.success || !result.externalPostId) {
       throw new Error(result.message || "Provider failed to publish post");
     }
+
+    const publishedAt = new Date();
+
     await prisma.$transaction(async (tx) => {
       const updatePost = await tx.post.updateMany({
         where: {
@@ -154,14 +191,16 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
         },
         data: {
           status: "PUBLISHED",
-          publishedAt: new Date(),
+          publishedAt,
           publishingLockToken: null,
           publishingLockExpiresAt: null,
         },
       });
+
       if (updatePost.count === 0) {
         throw new Error("Publishing lock lost. Cannot update post.");
       }
+
       await tx.publishAttempt.create({
         data: {
           postId: post.id,
@@ -169,14 +208,26 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
           success: true,
         },
       });
+
       console.log(`Post ${post.id} published successfully.`);
     });
+
+    // Notify workspace members after the transaction commits.
+    socketEmitter
+      .to(`workspace:${post.workspaceId}`)
+      .emit("post:status-updated", {
+        postId: post.id,
+        workspaceId: post.workspaceId,
+        status: "PUBLISHED",
+        publishedAt: publishedAt.toISOString(),
+      });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown publishing error";
 
     console.error(`Publishing failed for post ${postId}:`, errorMessage);
-    await prisma.$transaction(async (tx) => {
+
+    const failureRecorded = await prisma.$transaction(async (tx) => {
       const ownedPost = await tx.post.updateMany({
         where: {
           id: post.id,
@@ -190,16 +241,19 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
           publishingLockExpiresAt: null,
         },
       });
+
       if (ownedPost.count === 0) {
         console.error("Lock lost. Cannot record this worker's failure.");
-        return;
+        return false;
       }
+
       const currentAttempt =
         (await tx.publishAttempt.count({
           where: {
             postId,
           },
         })) + 1;
+
       await tx.publishAttempt.create({
         data: {
           postId,
@@ -208,17 +262,33 @@ const processPublishJob = async (job: Job<PublishJobData>, token?: string) => {
           error: errorMessage,
         },
       });
+
+      return true;
     });
+
     if (isFinalAttempt) {
       console.error(`Post ${postId} permanently failed.`);
+
+      // Notify only if this worker successfully recorded the final failure.
+      if (failureRecorded) {
+        socketEmitter
+          .to(`workspace:${post.workspaceId}`)
+          .emit("post:status-updated", {
+            postId: post.id,
+            workspaceId: post.workspaceId,
+            status: "FAILED",
+          });
+      }
     } else {
       console.log(`BullMQ will retry post ${postId}.`);
     }
+
     throw error;
   } finally {
     clearInterval(lockInterval);
   }
 };
+
 const publishWorker = new Worker<PublishJobData>(
   "publish-post",
   processPublishJob,
@@ -227,6 +297,7 @@ const publishWorker = new Worker<PublishJobData>(
     concurrency: 5,
   },
 );
+
 publishWorker.on("completed", (job) => {
   console.log(`Job ${job.id} completed successfully.`);
 });
@@ -238,5 +309,7 @@ publishWorker.on("failed", (job, error) => {
 publishWorker.on("error", (error) => {
   console.error("Worker error:", error);
 });
+
 console.log("Publish worker started.");
+
 export default publishWorker;
